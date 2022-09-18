@@ -34,7 +34,7 @@ file_list = os.listdir('Flickr8k_text')
 
 ##Training images list
 train_img_list = []
-with open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_text/Flickr_8k.trainImages.txt', 'r') as f:
+with open('Flickr8k_text/Flickr_8k.trainImages.txt', 'r') as f:
     for i in f:
         train_img_list.append(i.strip())
 
@@ -43,15 +43,16 @@ with open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_text
 
 ##Test images list
 test_img_list = []
-with open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_text/Flickr_8k.testImages.txt', 'r') as f:
+with open('Flickr8k_text/Flickr_8k.testImages.txt', 'r') as f:
     for i in f:
         test_img_list.append(i.strip())
+
 
 # In[10]:gi
 
 
 img_caption = []
-with open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_text/Flickr8k.token.txt', 'r') as f:
+with open('Flickr8k_text/Flickr8k.token.txt', 'r') as f:
     for i in f:
         img_caption.append(i)
 
@@ -259,7 +260,7 @@ np.save('Flickr8k_text/flickr8k_dictionary.npy', np.asarray(id_to_word))
 
 
 ## save training data to single text file
-with io.open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_text/train_captions.txt', 'w', encoding='utf-8') as f:
+with io.open('Flickr8k_text/train_captions.txt', 'w', encoding='utf-8') as f:
     for i, tokens in enumerate(train_token_ids):
         f.write("%s " % train_token[i][0])
         for token in tokens:
@@ -270,7 +271,7 @@ with io.open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_t
 
 
 ## save test data to single text file
-with io.open('/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr8k_text/test_captions.txt', 'w', encoding='utf-8') as f:
+with io.open('Flickr8k_text/test_captions.txt', 'w', encoding='utf-8') as f:
     for i, tokens in enumerate(test_token_ids):
         f.write("%s " % test_token[i][0])
         for token in tokens:
@@ -309,7 +310,7 @@ def resize_images(image_dir, output_dir, size):
 
 
 ##Resize image
-image_dir = '/Users/stefaniagrad/PycharmProjects/ShowAndTellFlickr8k/Flickr_Data/Flickr_Data/Images'
+image_dir = 'Flickr_Data/Flickr_Data/Images'
 output_dir = 'Flickr8k_resized_image/'
 image_size = [256, 256]
 #resize_images(image_dir, output_dir, image_size)
@@ -369,8 +370,8 @@ test_data = Dataset(img_dir, test_img_list, test_token_ids_dict, test_cap_length
 # In[33]:
 
 
-train_dataloader = data.DataLoader(train_data, batch_size=1, shuffle=True, num_workers=2)
-test_dataloader = data.DataLoader(test_data, batch_size=1, shuffle=True, num_workers=2)
+train_dataloader = data.DataLoader(train_data, batch_size=32, shuffle=True)
+test_dataloader = data.DataLoader(test_data, batch_size=32, shuffle=True)
 
 # In[34]:
 
@@ -474,62 +475,57 @@ def sorting(image, caption, length):
 # In[40]:
 
 
-# Loss and optimizer
-# encoder.to(device)
-# decoder.to(device)
-# criterion = nn.CrossEntropyLoss()
-# params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
-# optimizer = torch.optim.Adam(params, lr=0.001)
+#Loss and optimizer
+encoder.to(device)
+decoder.to(device)
+criterion = nn.CrossEntropyLoss()
+params = list(decoder.parameters()) + list(encoder.linear.parameters()) + list(encoder.bn.parameters())
+optimizer = torch.optim.Adam(params, lr=0.001)
 
 # In[41]:
 
 
 ##Train the model
-# encoder.train()
-# decoder.train()
+encoder.train()
+decoder.train()
 #
-# train_loss = []
-# time1 = time.time()
-# epochs = 3
-# total_step = len(train_dataloader)
-# print("incepe train")
-# for epoch in range(epochs):
-#     print(epoch)
-#     for i, (images, captions, lengths) in enumerate(train_dataloader):
-#         print("a")
+train_loss = []
+time1 = time.time()
+epochs = 1
+total_step = len(train_dataloader)
+print("incepe train")
+for epoch in range(epochs):
+    print(epoch)
+    for i, (images, captions, lengths) in enumerate(train_dataloader):
+        print("a")
 #
-#         #images, captions, lengths = sorting(images, captions, lengths)
-#         print("sorted")
+        images, captions, lengths = sorting(images, captions, lengths)
+        print("sorted")
 #
-#         targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
-#         print("a")
-#         ##Forward,backward and optimization
-#         features = encoder(images)
-#         outputs = decoder(features, captions, lengths)
-#         loss = criterion(outputs, targets)
-#         decoder.zero_grad()
-#         encoder.zero_grad()
-#         loss.backward()
-#         optimizer.step()
-#
-#         train_loss.append(loss)
+        targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
+        print("a")
+        ##Forward,backward and optimization
+        features = encoder(images)
+        outputs = decoder(features, captions, lengths)
+        #outputs= torch.tensor(outputs, dtype=torch.long, device=device)
+        loss = criterion(outputs, targets.long())
+        decoder.zero_grad()
+        encoder.zero_grad()
+        loss.backward()
+        optimizer.step()
+
+        train_loss.append(loss)
 #
 #         # Print log info
-#         if i % 100 == 0:
-#             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Perplexity: {:5.4f}'
-#                   .format(epoch, epochs, i, total_step, loss.item(), np.exp(loss.item())))
+        if i % 100 == 0:
+            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Perplexity: {:5.4f}'
+                  .format(epoch, epochs, i, total_step, loss.item(), np.exp(loss.item())))
 #
-#             # Save the model checkpoints
-#         '''if (i+1) % 100 == 0:
-#             torch.save(decoder.state_dict(), os.path.join(
-#                     'models/flickr8k/', 'decoder-{}-{}.ckpt'.format(epoch+1, i+1)))
-#             torch.save(encoder.state_dict(), os.path.join(
-#                     'models/flickr8k/', 'encoder-{}-{}.ckpt'.format(epoch+1, i+1)))'''
 #
-# print('RUNNING TIME: {}'.format(time.time() - time1))
+print('RUNNING TIME: {}'.format(time.time() - time1))
 #
-# torch.save(encoder, os.path.join('models/flickr8k/', 'encoder.model'))
-# torch.save(decoder, os.path.join('models/flickr8k/', 'decoder.model'))
+torch.save(encoder, os.path.join('models/flickr8k/', 'encoder.model'))
+torch.save(decoder, os.path.join('models/flickr8k/', 'decoder.model'))
 class EncoderDecoder(nn.Module):
     """The base class for the encoder-decoder architecture."""
     def __init__(self, encoder, decoder, **kwargs):
@@ -537,28 +533,38 @@ class EncoderDecoder(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, enc_X, dec_X, *args):
+    def forward(self, enc_X,captions,lengths, *args):
         enc_outputs = self.encoder(enc_X, *args)
         dec_state = self.decoder.init_state(enc_outputs, *args)
-        return self.decoder(dec_X, dec_state)
+        return self.decoder(enc_outputs,captions,lengths)
+
+
+
 model = EncoderDecoder(encoder, decoder)
 
-
+#model=encoder
+#model2=decoder
 
 import onnx
 from onnx import shape_inference
 
-from onnxsim import simplify
-dummy_input = train_data.next()
-torch.onnx.export(model, dummy_input, "showandtell.onnx", verbose=True)
+#from onnxsim import simplify
+
+dummy_input =torch.rand(1,3,500,375)
+print(dummy_input.shape)
+torch.onnx.export(model, dummy_input, "showandtellenc.onnx", verbose=True)
 model = onnx.load("showandtell.onnx")
 inferred_model = shape_inference.infer_shapes(model)
 
-
+dummy_input2 =torch.rand(508)
+print(dummy_input.shape)
+torch.onnx.export(model2, dummy_input2, "showandtelldec.onnx", verbose=True)
+model = onnx.load("showandtell.onnx")
+inferred_model = shape_inference.infer_shapes(model)
 
 # convert model
-model_simp, check = simplify(inferred_model)
+#model_simp, check = simplify(inferred_model)
 
-assert check, "Simplified ONNX model could not be validated"
+#assert check, "Simplified ONNX model could not be validated"
 
-onnx.save(model_simp, "my_model.onnx");
+#onnx.save(model, "my_model.onnx");
