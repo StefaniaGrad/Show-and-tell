@@ -424,7 +424,7 @@ class DecoderRNN(nn.Module):
         """Decode image feature vectors and generates captions."""
         embeddings = self.embed(captions)
         embeddings = torch.cat((features.unsqueeze(1), embeddings), 1)
-        packed = pack_padded_sequence(embeddings, lengths, batch_first=True)
+        #packed = pack_padded_sequence(embeddings, lengths, batch_first=True)
         hiddens, _ = self.lstm(packed)
         outputs = self.linear(hiddens[0])
         return outputs
@@ -500,7 +500,8 @@ for epoch in range(epochs):
         captions = captions.to(device)
 
         images, captions, lengths = sorting(images, captions, lengths)
-
+        print(captions)
+        print(lengths)
         targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
 
         ##Forward,backward and optimization

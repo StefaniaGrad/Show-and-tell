@@ -486,46 +486,46 @@ optimizer = torch.optim.Adam(params, lr=0.001)
 
 
 ##Train the model
-encoder.train()
-decoder.train()
+# encoder.train()
+# decoder.train()
+# #
+# train_loss = []
+# time1 = time.time()
+# epochs = 1
+# total_step = len(train_dataloader)
+# print("incepe train")
+# for epoch in range(epochs):
+#     print(epoch)
+#     for i, (images, captions, lengths) in enumerate(train_dataloader):
+#         print("a")
+# #
+#         images, captions, lengths = sorting(images, captions, lengths)
+#         print("sorted")
+# #
+#         targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
+#         print("a")
+#         ##Forward,backward and optimization
+#         features = encoder(images)
+#         outputs = decoder(features, captions, lengths)
+#         #outputs= torch.tensor(outputs, dtype=torch.long, device=device)
+#         loss = criterion(outputs, targets.long())
+#         decoder.zero_grad()
+#         encoder.zero_grad()
+#         loss.backward()
+#         optimizer.step()
 #
-train_loss = []
-time1 = time.time()
-epochs = 1
-total_step = len(train_dataloader)
-print("incepe train")
-for epoch in range(epochs):
-    print(epoch)
-    for i, (images, captions, lengths) in enumerate(train_dataloader):
-        print("a")
-#
-        images, captions, lengths = sorting(images, captions, lengths)
-        print("sorted")
-#
-        targets = pack_padded_sequence(captions, lengths, batch_first=True)[0]
-        print("a")
-        ##Forward,backward and optimization
-        features = encoder(images)
-        outputs = decoder(features, captions, lengths)
-        #outputs= torch.tensor(outputs, dtype=torch.long, device=device)
-        loss = criterion(outputs, targets.long())
-        decoder.zero_grad()
-        encoder.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        train_loss.append(loss)
-#
-#         # Print log info
-        if i % 100 == 0:
-            print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Perplexity: {:5.4f}'
-                  .format(epoch, epochs, i, total_step, loss.item(), np.exp(loss.item())))
-#
-#
-print('RUNNING TIME: {}'.format(time.time() - time1))
-#
-torch.save(encoder, os.path.join('models/flickr8k/', 'encoder.model'))
-torch.save(decoder, os.path.join('models/flickr8k/', 'decoder.model'))
+#         train_loss.append(loss)
+# #
+# #         # Print log info
+#         if i % 100 == 0:
+#             print('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}, Perplexity: {:5.4f}'
+#                   .format(epoch, epochs, i, total_step, loss.item(), np.exp(loss.item())))
+# #
+# #
+# print('RUNNING TIME: {}'.format(time.time() - time1))
+# #
+# torch.save(encoder, os.path.join('models/flickr8k/', 'encoder.model'))
+# torch.save(decoder, os.path.join('models/flickr8k/', 'decoder.model'))
 class EncoderDecoder(nn.Module):
     """The base class for the encoder-decoder architecture."""
     def __init__(self, encoder, decoder, **kwargs):
@@ -535,8 +535,10 @@ class EncoderDecoder(nn.Module):
 
     def forward(self, enc_X,captions,lengths, *args):
         enc_outputs = self.encoder(enc_X, *args)
-        dec_state = self.decoder.init_state(enc_outputs, *args)
+        #dec_state = self.decoder.init_state(enc_outputs, *args)
         return self.decoder(enc_outputs,captions,lengths)
+
+
 
 
 
@@ -550,17 +552,16 @@ from onnx import shape_inference
 
 #from onnxsim import simplify
 
-dummy_input =torch.rand(1,3,500,375)
-print(dummy_input.shape)
-torch.onnx.export(model, dummy_input, "showandtellenc.onnx", verbose=True)
+dummy_input =(torch.rand(1,3,500,375),torch.tensor([[   1,    4,   13,   10, 1130,   28,  165,    6,    7,   67,    8,  117,
+            4,  313,   14,    7, 2955, 2396,    9,  138,    5,    2,    3,    3,
+            3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,    3,
+            3]], dtype=torch.int32),torch.tensor([22]))
+
+torch.onnx.export(model, dummy_input, "showandtellenc.onnx", verbose=True, opset_version = 11)
 model = onnx.load("showandtell.onnx")
 inferred_model = shape_inference.infer_shapes(model)
 
-dummy_input2 =torch.rand(508)
-print(dummy_input.shape)
-torch.onnx.export(model2, dummy_input2, "showandtelldec.onnx", verbose=True)
-model = onnx.load("showandtell.onnx")
-inferred_model = shape_inference.infer_shapes(model)
+
 
 # convert model
 #model_simp, check = simplify(inferred_model)
